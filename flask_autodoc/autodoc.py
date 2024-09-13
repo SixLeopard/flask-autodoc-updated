@@ -6,13 +6,7 @@ import sys
 import inspect
 
 from flask import current_app, render_template, render_template_string
-from jinja2 import evalcontextfilter
-
-
-try:
-    from flask import _app_ctx_stack as stack
-except ImportError:
-    from flask import _request_ctx_stack as stack
+from jinja2 import pass_context
 
 
 if sys.version < '3':
@@ -35,14 +29,11 @@ class Autodoc(object):
             self.init_app(app)
 
     def init_app(self, app):
-        if hasattr(app, 'teardown_appcontext'):
-            app.teardown_appcontext(self.teardown)
-        else:
-            app.teardown_request(self.teardown)
+        app.teardown_appcontext(self.teardown)
         self.add_custom_template_filters(app)
 
     def teardown(self, exception):
-        ctx = stack.top
+        pass  # Context stack management is no longer needed
 
     def add_custom_template_filters(self, app):
         """Add custom filters to jinja2 templating engine"""
@@ -55,7 +46,7 @@ class Autodoc(object):
         _paragraph_re = re.compile(r'(?:\r\n|\r|\n){3,}')
 
         @app.template_filter()
-        @evalcontextfilter
+        @pass_context
         def nl2br(eval_ctx, value):
             result = '\n\n'.join('%s' % p.replace('\n', '<br>\n')
                                  for p in _paragraph_re.split(value))
